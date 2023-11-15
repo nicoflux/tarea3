@@ -1,73 +1,78 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
 
-// Structure pour représenter une position dans la matrice
-type Position struct {
-	X int
-	Y int
-}
-
-func FloodFill(matrix [][]rune, point Position, testColor rune, newChar rune) {
-	fmt.Println("got inside FloodFill")
-
+func floodFill(matrix [][]rune, x int, y int, NewColor rune, OldColor rune) {
 	rows := len(matrix)
-	columns := len(matrix[0])
-	fmt.Println("rows: ", rows, " columns: ", columns)
-	if point.X < 0 || point.X >= rows || point.Y < 0 || point.Y >= columns {
-		fmt.Println("Point ", point, " est hors de la matrice")
+	col := len(matrix[0])
+	if x < 0 || x >= rows || y < 0 || y >= col {
+		return
+	}
+	if matrix[x][y] != OldColor {
 		return
 	}
 
-	if matrix[point.X][point.Y] != testColor {
-		fmt.Println("Point ", point, " n'est pas de la bonne couleur")
-		return
-	}
+	matrix[x][y] = NewColor
 
-	matrix[point.X][point.Y] = newChar
-
-	FloodFill(matrix, Position{point.X - 1, point.Y}, testColor, newChar)
-	FloodFill(matrix, Position{point.X + 1, point.Y}, testColor, newChar)
-	FloodFill(matrix, Position{point.X, point.Y - 1}, testColor, newChar)
-	FloodFill(matrix, Position{point.X, point.Y + 1}, testColor, newChar)
-	/* 	if point.X > 0 && point.Y > 0 {
-	   		FloodFill(matrix, Position{point.X - 1, point.Y - 1}, testColor, newChar)
-	   	}
-	   	if point.X < columns-1 && point.Y > 0 {
-	   		FloodFill(matrix, Position{point.X + 1, point.Y - 1}, testColor, newChar)
-	   	}
-	   	if point.X > 0 && point.Y < rows-1 {
-	   		FloodFill(matrix, Position{point.X - 1, point.Y + 1}, testColor, newChar)
-	   	}
-	   	if point.X < columns-1 && point.Y < rows-1 {
-	   		FloodFill(matrix, Position{point.X + 1, point.Y + 1}, testColor, newChar)
-	   	} */
+	floodFill(matrix, x+1, y, NewColor, OldColor)
+	floodFill(matrix, x-1, y, NewColor, OldColor)
+	floodFill(matrix, x, y+1, NewColor, OldColor)
+	floodFill(matrix, x, y-1, NewColor, OldColor)
+	floodFill(matrix, x+1, y+1, NewColor, OldColor)
+	floodFill(matrix, x-1, y-1, NewColor, OldColor)
+	floodFill(matrix, x+1, y-1, NewColor, OldColor)
+	floodFill(matrix, x-1, y+1, NewColor, OldColor)
 }
 
 func main() {
-	// Matrice d'exemple
-	matrix := [][]rune{
-		{'.', '.', '.', '.'},
-		{'.', 'O', 'O', '.'},
-		{'.', 'O', 'O', '.'},
-		{'.', '.', '.', '.'},
-		{'.', '.', 'O', 'O'},
-		{'.', '.', 'O', 'O'},
+
+	data, err := os.ReadFile("matrix.txt")
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
-	// Afficher la matrice originale
-	fmt.Println("Matrice originale:")
+	lines := strings.Split(string(data), "\n")
+	for i, line := range lines {
+		currentLine := strings.TrimSpace(line)
+		currentLine = strings.Join(strings.Fields(currentLine), "")
+		lines[i] = strings.TrimSpace(currentLine)
+	}
+
+	var matrix [][]rune
+	for _, line := range lines {
+		row := []rune(line)
+		matrix = append(matrix, row)
+	}
+
+	fmt.Println("Original matrix:")
 	for _, row := range matrix {
 		fmt.Println(string(row))
 	}
-	var point Position
-	point.X = 2
-	point.Y = 4
-	fmt.Println("calling FloodFill")
-	FloodFill(matrix, point, matrix[point.X][point.Y], 'X')
 
-	// Afficher la matrice modifiée
-	fmt.Println("Matrice après flood fill:")
+	// Read flood fill data from file
+	fillData, err := os.ReadFile("turnos.txt")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	turnosLines := strings.Split(string(fillData), "\n")
+
+	for _, line := range turnosLines {
+		data := strings.Split(line, " ")
+		x, _ := strconv.Atoi(data[0])
+		y, _ := strconv.Atoi(data[1])
+		newColor := rune(data[2][0])
+		floodFill(matrix, x, y, newColor, matrix[x][y])
+	}
+
+	fmt.Println("Matrix after flood fill:")
 	for _, row := range matrix {
 		fmt.Println(string(row))
 	}
