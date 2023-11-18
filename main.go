@@ -43,7 +43,7 @@ func (m *Matrix) printMatrix() {
 	}
 }
 
-func (m *Matrix) updateMatrix(x, y int, color string, processID int) {
+func (m *Matrix) updateMatrix(x, y int, color string, processID int, filename string) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 
@@ -57,6 +57,18 @@ func (m *Matrix) updateMatrix(x, y int, color string, processID int) {
 
 	// Imprimir el mensaje de salida
 	fmt.Printf("Niño %d pintó desde (%d, %d) con color %s.\n", processID, x, y, color)
+
+	// Escribir la matriz en el archivo
+	file, err := os.OpenFile(filename, os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	for _, row := range m.data {
+		file.WriteString(strings.Join(row, " ") + "\n")
+	}
+
 }
 
 // Función floodFill para matrices de cadenas
@@ -77,6 +89,10 @@ func (m *Matrix) floodFill(x, y int, newColor, oldColor string) {
 		fill(x-1, y)
 		fill(x, y+1)
 		fill(x, y-1)
+		fill(x+1, y+1)
+		fill(x-1, y-1)
+		fill(x+1, y-1)
+		fill(x-1, y+1)
 	}
 
 	// Llamar a la función de llenado desde la posición inicial
@@ -103,20 +119,28 @@ func main() {
 	processTurn := func(processID int) {
 		defer wg.Done()
 
-		turnsFile, err := os.Open(turnsFileName)
-		if err != nil {
-			panic(err)
-		}
-		defer turnsFile.Close()
+		// Read flood fill data from file
+		for {
+			turnosData, err := os.ReadFile(turnsFileName)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 
-		scanner := bufio.NewScanner(turnsFile)
-		for scanner.Scan() {
-			turn := strings.Fields(scanner.Text())
-			x, _ := strconv.Atoi(turn[0])
-			y, _ := strconv.Atoi(turn[1])
-			color := turn[2]
+			turnosLines := strings.Split(string(turnosData), "\n")
+			if len(turnosLines) == 0 || turnosLines[0] == "" {
+				break // Exit the loop if no more lines in the file
+			}
 
-			matrix.updateMatrix(x, y, color, processID)
+			data := strings.Split(turnosLines[0], " ")
+			x, _ := strconv.Atoi(data[0])
+			y, _ := strconv.Atoi(data[1])
+			color := string(data[2][0])
+			matrix.updateMatrix(x, y, color, processID, matrixFileName)
+
+			// Rewrite the remaining lines in the file
+			remainingLines := strings.Join(turnosLines[1:], "\n")
+			os.WriteFile(turnsFileName, []byte(remainingLines), os.ModePerm)
 		}
 	}
 
